@@ -139,4 +139,6 @@ if (Get-Command gpupdate.exe -ErrorAction SilentlyContinue) {
 Write-Host ""
 Write-Host "Privacy configuration applied." -ForegroundColor Green
 Write-Host "Restart Windows to complete the changes." -ForegroundColor Yellow
+Write-Host ""
+Write-Host ""
 exit 0
