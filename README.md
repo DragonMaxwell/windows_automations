@@ -1,7 +1,5 @@
 # Windows Setup Automation Scripts
 
-Version: **0.0.1**
-
 Collection of PowerShell automation scripts for Windows 10 and Windows 11 installation and post-installation tasks.
 
 ## Structure
@@ -61,7 +59,5 @@ Performs broad Windows 11 cleanup focused on privacy, reducing unnecessary compo
 - A restart may be required after some changes.
 - Do not store passwords, tokens, private keys, or credentials directly in the repository.
 
-## Version
-
-### 0.0.2
+## Version 0.0.2
 

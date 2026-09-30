@@ -64,23 +64,6 @@ for /r "%SCRIPT_DIR%" %%F in (*.ps1) do (
 
 :FINAL
 
-:: Scripts from type (.cmd|.bat)
-
-:: Reorganizes the folder view in File Explorer so that all folders always use the same layout, regardless of their contents.
-reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags" /f
-reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU" /f
-reg add "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell" /v FolderType /t REG_SZ /d NotSpecified /f
-taskkill /f /im explorer.exe
-timeout /t 3 /nobreak >nul
-start explorer.exe
-
-:: Enables auto-login for the current user; it can be configured through "control userpasswords2"
-reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon /t REG_SZ /d "1" /f
-reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultUserName /t REG_SZ /d "%USERNAME%" /f
-reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultDomainName /t REG_SZ /d "%COMPUTERNAME%" /f
-
-:: End of Scripts type (.cmd|.bat)
-
 echo.
 echo ============================================================
 echo FINAL RESULT

@@ -1,114 +1,210 @@
-﻿# install_apps.ps1
-# Executes every .exe found in the "apps" folder, one at a time.
-# Optional arguments and accepted exit codes can be configured per executable.
+﻿# 99_install_apps.ps1
+# Installs applications in exactly the order declared below.
+# The next installer starts only after the current installer has finished or failed.
 
 $ErrorActionPreference = 'Stop'
-
-# apps folder is expected next to the "scripts" folder:
-# root\
-#   execute_scripts.cmd
-#   scripts\
-#       install_apps.ps1
-#   apps\
-#       app1.exe
-#       app2.exe
 
 $RootDir = Split-Path -Parent $PSScriptRoot
 $AppsDir = Join-Path $RootDir 'apps'
 
-# Optional arguments per executable.
-# Executables not listed here will run WITHOUT arguments.
-#Firefox Setup 140.17.0esr.msi
-#msiexec.exe /i "FirefoxESR.msi" /qb! /norestart
-$AppArguments = @{
-    'vcredist_runtime_pack.exe' = @('-s')
-	'msiexec.exe' = @('/i', 'FirefoxESR_140.17.0.msi', 'qb!', '/norestart')
-    # '7zip.exe' = @('/S')
-    # 'another_app.exe' = @('/quiet', '/norestart')
-}
-
-# Optional accepted exit codes per executable.
-# Executables not listed here accept only exit code 0.
-$SuccessCodes = @{
-    # 'Visual C++ runtime install pack.exe' = @(0, 1001)
-    # 'another_app.exe' = @(0, 3010, 1641)
-}
-
 if (-not (Test-Path -LiteralPath $AppsDir -PathType Container)) {
     Write-Host "[ERROR] Apps folder not found: $AppsDir" -ForegroundColor Red
+    Write-Host ''
+    Write-Host 'Closing in 10 seconds...'
+    & "$env:SystemRoot\System32\timeout.exe" /t 10 /nobreak
     exit 1
 }
 
-$Executables = Get-ChildItem -LiteralPath $AppsDir -Filter '*.exe' -File | Sort-Object Name
+$Is64BitWindows = [Environment]::Is64BitOperatingSystem
 
-if (-not $Executables) {
-    Write-Host "[WARNING] No executable files were found in: $AppsDir" -ForegroundColor Yellow
-    exit 0
-}
+# Installation order is the declaration order below.
+# Parameters for Visual C++ runtimes match the old install.cmd that was already working.
+$Apps = @(
+    @{
+        File         = 'FirefoxESR_140.17.0.msi'
+        Type         = 'MSI'
+        Architecture = 'Any'
+        Arguments    = '/passive /norestart'
+        SuccessCodes = @(0, 1641, 3010)
+    }
 
-$OkCount = 0
+    @{
+        File         = 'vcredist2005_x86.exe'
+        Type         = 'EXE'
+        Architecture = 'x86'
+        Arguments    = '/q'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2005_x64.exe'
+        Type         = 'EXE'
+        Architecture = 'x64'
+        Arguments    = '/q'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2008_x86.exe'
+        Type         = 'EXE'
+        Architecture = 'x86'
+        Arguments    = '/q'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2008_x64.exe'
+        Type         = 'EXE'
+        Architecture = 'x64'
+        Arguments    = '/q'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2010_x86.exe'
+        Type         = 'EXE'
+        Architecture = 'x86'
+        Arguments    = '/passive /norestart'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2010_x64.exe'
+        Type         = 'EXE'
+        Architecture = 'x64'
+        Arguments    = '/passive /norestart'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2012_x86.exe'
+        Type         = 'EXE'
+        Architecture = 'x86'
+        Arguments    = '/passive /norestart'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2012_x64.exe'
+        Type         = 'EXE'
+        Architecture = 'x64'
+        Arguments    = '/passive /norestart'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2013_x86.exe'
+        Type         = 'EXE'
+        Architecture = 'x86'
+        Arguments    = '/install /passive /norestart'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2013_x64.exe'
+        Type         = 'EXE'
+        Architecture = 'x64'
+        Arguments    = '/install /passive /norestart'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2015-2026_x86.exe'
+        Type         = 'EXE'
+        Architecture = 'x86'
+        Arguments    = '/install /passive /norestart'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+
+    @{
+        File         = 'vcredist2015-2026_x64.exe'
+        Type         = 'EXE'
+        Architecture = 'x64'
+        Arguments    = '/install /passive /norestart'
+        SuccessCodes = @(0, 1641, 3010)
+    }
+)
+
+$SuccessCount = 0
 $ErrorCount = 0
+$SkippedCount = 0
 
-foreach ($Exe in $Executables) {
+foreach ($App in $Apps) {
+    if ($App.Architecture -eq 'x64' -and -not $Is64BitWindows) {
+        Write-Host "[SKIP] $($App.File) requires 64-bit Windows." -ForegroundColor DarkGray
+        $SkippedCount++
+        continue
+    }
+
+    $InstallerPath = Join-Path $AppsDir $App.File
+
+    if (-not (Test-Path -LiteralPath $InstallerPath -PathType Leaf)) {
+        Write-Host "[SKIP] $($App.File) not found." -ForegroundColor DarkGray
+        $SkippedCount++
+        continue
+    }
+
     Write-Host ''
     Write-Host '============================================================'
-    Write-Host "Executing: $($Exe.Name)"
+    Write-Host "Installing: $($App.File)"
     Write-Host '============================================================'
 
-    $Arguments = @()
-    if ($AppArguments.ContainsKey($Exe.Name)) {
-        $Arguments = @($AppArguments[$Exe.Name])
-    }
-
-    $AcceptedCodes = @(0)
-    if ($SuccessCodes.ContainsKey($Exe.Name)) {
-        $AcceptedCodes = @($SuccessCodes[$Exe.Name])
-    }
-
     try {
-        # Native PowerShell invocation.
-        # It runs the executable directly and waits until it returns.
-        if ($Arguments.Count -gt 0) {
-            & $Exe.FullName @Arguments
+        if ($App.Type -eq 'MSI') {
+            # Keep the MSI path explicitly quoted so paths with spaces work correctly.
+            $MsiArguments = '/i "' + $InstallerPath + '" ' + $App.Arguments
+
+            $Process = Start-Process `
+                -FilePath "$env:SystemRoot\System32\msiexec.exe" `
+                -ArgumentList $MsiArguments `
+                -Wait `
+                -PassThru
+        }
+        elseif ($App.Type -eq 'EXE') {
+            $Process = Start-Process `
+                -FilePath $InstallerPath `
+                -ArgumentList $App.Arguments `
+                -Wait `
+                -PassThru
         }
         else {
-            & $Exe.FullName
+            throw "Unsupported installer type: $($App.Type)"
         }
 
-        $ExitCode = $LASTEXITCODE
+        $ExitCode = $Process.ExitCode
 
-        # Some native programs may not set LASTEXITCODE. Treat that as success
-        # only when PowerShell itself reports successful invocation.
-        if ($null -eq $ExitCode) {
-            if ($?) {
-                $ExitCode = 0
+        if ($App.SuccessCodes -contains $ExitCode) {
+            if ($ExitCode -in 1641, 3010) {
+                Write-Host "[OK] $($App.File) completed. Restart required. Exit code: $ExitCode" -ForegroundColor Yellow
             }
             else {
-                $ExitCode = 1
+                Write-Host "[OK] $($App.File) completed. Exit code: $ExitCode" -ForegroundColor Green
             }
-        }
 
-        if ($AcceptedCodes -contains $ExitCode) {
-            Write-Host "[OK] $($Exe.Name) returned exit code $ExitCode." -ForegroundColor Green
-            $OkCount++
+            $SuccessCount++
         }
         else {
-            Write-Host "[ERROR] $($Exe.Name) returned exit code $ExitCode." -ForegroundColor Red
+            Write-Host "[ERROR] $($App.File) returned exit code $ExitCode." -ForegroundColor Red
             $ErrorCount++
         }
     }
     catch {
-        Write-Host "[ERROR] Failed to execute $($Exe.Name): $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[ERROR] $($App.File): $($_.Exception.Message)" -ForegroundColor Red
         $ErrorCount++
     }
 }
 
 Write-Host ''
 Write-Host '============================================================'
-Write-Host 'Applications execution finished'
-Write-Host "Success: $OkCount"
-Write-Host "Errors : $ErrorCount"
+Write-Host 'Application installation completed'
+Write-Host "Success : $SuccessCount"
+Write-Host "Errors  : $ErrorCount"
+Write-Host "Skipped : $SkippedCount"
 Write-Host '============================================================'
+Write-Host ''
+Write-Host 'Closing in 5 seconds...'
+
+& "$env:SystemRoot\System32\timeout.exe" /t 5 /nobreak
 
 if ($ErrorCount -gt 0) {
     exit 1

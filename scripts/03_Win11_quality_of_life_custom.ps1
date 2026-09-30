@@ -163,4 +163,3 @@ Write-Host "Defender, firewall, Hyper-V, RDP, power settings and other services 
 Write-Host ""
 Write-Host "A sign-out or restart is recommended for all Start/Search changes to take effect." -ForegroundColor Yellow
 Write-Host ""
-Read-Host "Press ENTER to close this window"

@@ -654,4 +654,3 @@ Write-Host " - Windows Web Experience Pack and Edge WebView2 Runtime were intent
 Write-Host " - Automatic idle lock, secure screen saver, and idle sleep were disabled." -ForegroundColor Gray
 Write-Host " - A restart is recommended after reviewing the results above." -ForegroundColor Gray
 Write-Host ""
-Read-Host "Press ENTER to close this window"
